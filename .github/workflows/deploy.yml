@@ -11,18 +11,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Prepare deploy folder via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.HOSTINGER_HOST }}
-          username: ${{ secrets.HOSTINGER_USER }}
-          key: ${{ secrets.HOSTINGER_SSH_KEY }}
-          port: ${{ secrets.HOSTINGER_PORT }}
-          script: |
-            rm -rf ~/${{ secrets.HOSTINGER_FOLDER }}/deploy_temp
-            mkdir -p ~/${{ secrets.HOSTINGER_FOLDER }}/deploy_temp
-            exit
-
       - name: Save SSH key
         run: |
           echo "${{ secrets.HOSTINGER_SSH_KEY }}" > /tmp/ssh_key
@@ -30,9 +18,9 @@ jobs:
 
       - name: Copy files via rsync
         run: |
-          rsync -avz --delete -e "ssh -i /tmp/ssh_key -p ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no" ./ ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:~/${{ secrets.HOSTINGER_FOLDER }}/depl
+          rsync -avz --delete -e "ssh -i /tmp/ssh_key -p ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no" ./ ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:~/${{ secrets.HOSTINGER_FOLDER }}/
 
-      - name: Finish deploy via SSH
+      - name: Ajustar public_html para apontar para public
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HOSTINGER_HOST }}
@@ -41,7 +29,7 @@ jobs:
           port: ${{ secrets.HOSTINGER_PORT }}
           script: |
             rm -rf ~/${{ secrets.HOSTINGER_FOLDER }}/public_html
-            mv ~/${{ secrets.HOSTINGER_FOLDER }}/deploy_temp ~/${{ secrets.HOSTINGER_FOLDER }}/public_html
+            ln -s ~/${{ secrets.HOSTINGER_FOLDER }}/public ~/${{ secrets.HOSTINGER_FOLDER }}/public_html
 
-      - name: Remove temporary SSH key
+      - name: Remover chave SSH temporária
         run: rm -f /tmp/ssh_key
