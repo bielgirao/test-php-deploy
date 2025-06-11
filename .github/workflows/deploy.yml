@@ -1,0 +1,39 @@
+name: Deploy via SSH
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Prepare deploy folder via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOSTINGER_HOST }}
+          username: ${{ secrets.HOSTINGER_USER }}
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          port: ${{ secrets.HOSTINGER_PORT }}
+          script: |
+            rm -rf ~/${{ secrets.HOSTINGER_FOLDER }}/deploy_temp
+            mkdir -p ~/${{ secrets.HOSTINGER_FOLDER }}/deploy_temp
+            exit
+
+      - name: Copy files via rsync
+        run: |
+          rsync -avz --delete -e "ssh -i ${{ secrets.HOSTINGER_SSH_KEY }} -p ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no" ./ ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:~/${{ secrets.HOSTINGER_FOLDER }}/deploy_temp/
+
+      - name: Finish deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOSTINGER_HOST }}
+          username: ${{ secrets.HOSTINGER_USER }}
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          port: ${{ secrets.HOSTINGER_PORT }}
+          script: |
+            rm -rf ~/${{ secrets.HOSTINGER_FOLDER }}/public_html
+            mv ~/${{ secrets.HOSTINGER_FOLDER }}/deploy_temp ~/${{ secrets.HOSTINGER_FOLDER }}/public_html
