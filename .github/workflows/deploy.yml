@@ -23,9 +23,14 @@ jobs:
             mkdir -p ~/${{ secrets.HOSTINGER_FOLDER }}/deploy_temp
             exit
 
+      - name: Save SSH key
+        run: |
+          echo "${{ secrets.HOSTINGER_SSH_KEY }}" > /tmp/ssh_key
+          chmod 600 /tmp/ssh_key
+
       - name: Copy files via rsync
         run: |
-          rsync -avz --delete -e "ssh -i ${{ secrets.HOSTINGER_SSH_KEY }} -p ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no" ./ ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:~/${{ secrets.HOSTINGER_FOLDER }}/deploy_temp/
+          rsync -avz --delete -e "ssh -i /tmp/ssh_key -p ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no" ./ ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:~/${{ secrets.HOSTINGER_FOLDER }}/depl
 
       - name: Finish deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -37,3 +42,6 @@ jobs:
           script: |
             rm -rf ~/${{ secrets.HOSTINGER_FOLDER }}/public_html
             mv ~/${{ secrets.HOSTINGER_FOLDER }}/deploy_temp ~/${{ secrets.HOSTINGER_FOLDER }}/public_html
+
+      - name: Remove temporary SSH key
+        run: rm -f /tmp/ssh_key
